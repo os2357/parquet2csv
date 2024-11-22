@@ -3,10 +3,10 @@ package main
 import (
 	"csv2parquet/internal/file"
 	"csv2parquet/internal/helper"
-	"csv2parquet/internal/shcema"
+	"csv2parquet/internal/schema"
 	"encoding/csv"
+	"errors"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -25,35 +25,23 @@ func main() {
 		eData  interface{}
 		args   []string
 		record []string
+		header []string
 	)
 
 	compression := flag.Int("compression", 0, "Type of compression")
 	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
 	flush := flag.Int("flush", 10000, "number of rows to flush")
-	schema := flag.String("schema", "default", "schema of csv file")
+	table := flag.String("schema", "default", "schema of csv file")
 	help := flag.Bool("help", false, "Show this help message")
 	flag.Parse()
-	if *help {
-		fmt.Println(`Usage of ./csv2parquet:
-  --delimiter string
-        Delimiter for csv file (default ",")
-  --compression int
-        Type of compression (default 0)
-  --flush int
-        number of rows to flush (default 10000)
-  --help
-        Show this help message
-  -schema string
-        schema of csv file (default "default")`)
-		os.Exit(0)
-	}
+	helper.AppHelp(*help)
 	for _, arg := range os.Args[1:] {
 		if arg[0] == '-' {
 			continue
 		}
 		args = append(args, arg)
 	}
-	if len(args) < 2 {
+	if len(args) < 2 { //nolint:mnd // 2 required params
 		panic("Usage: go run main.go <file.csv> <file.parquet>")
 	}
 	csvFile := args[0]
@@ -74,29 +62,32 @@ func main() {
 	if err != nil {
 		panic("Can't create local file" + err.Error())
 	}
-	structType, processor := matchSchema(*schema)
-	pw, err := writer.NewParquetWriter(fw, structType, 4)
-	if err != nil {
-		panic("Can't create parquet writer" + err.Error())
-	}
-	pw.RowGroupSize = 128 * 1024 * 1024 //128M
-	pw.CompressionType = parquet.CompressionCodec(int32(*compression))
+
 	d := *delimiter
 	parser.Comma = []rune(d)[0]
-	_, err = parser.Read()
+	header, err = parser.Read()
 	if err != nil {
 		panic(err)
 	}
 	i := 0
+
+	structType, processor := schema.MatchSchema(*table, header)
+	pw, err := writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // don't know in example the same maybe the number of threads
+	if err != nil {
+		panic("Can't create parquet writer" + err.Error())
+	}
+	pw.RowGroupSize = 128 * 1024 * 1024 // 128M
+	pw.CompressionType = parquet.CompressionCodec(int32(*compression))
+
 	for {
 		record, err = parser.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		eData = processor(record)
+		eData = processor(record, structType, header)
 
 		if err = pw.Write(&eData); err != nil {
 			log.Println("Write error", err)
@@ -113,30 +104,14 @@ func main() {
 
 	}
 	if err = pw.Flush(true); err != nil {
-		log.Println("WriteFlush error", err)
-		return
+		panic("WriteFlush error: " + err.Error())
 	}
-
 	if err = pw.WriteStop(); err != nil {
-		log.Println("WriteStop error", err)
-		return
+		panic("WriteStop error: " + err.Error())
 	}
 
 	if err = fw.Close(); err != nil {
-		log.Println("Write Finish error", err)
-		return
+		panic("Write Finish error: " + err.Error())
 	}
-	fmt.Println(helper.RuntimeStatistics(startTime))
-}
-
-func matchSchema(schema string) (interface{}, shcema.SchemaProcessor) {
-	switch schema {
-	case "default":
-		return func(record []string) interface{} {
-			return nil //TODO Denis: add default schema
-		}, nil
-	case "enrich":
-		return new(shcema.EnrichData), shcema.ProcessEnrichData
-	}
-	panic("Schema not found")
+	log.Printf("%s\n", helper.RuntimeStatistics(startTime))
 }

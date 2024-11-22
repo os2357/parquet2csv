@@ -2,6 +2,8 @@ package helper
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"runtime"
 	"strconv"
@@ -69,4 +71,27 @@ func MemoryUsage() string {
 	runtime.ReadMemStats(&memStats)
 	return fmt.Sprintf("TotalAlloc: %v MB, Sys: %v MB", memStats.TotalAlloc/1024/1024, memStats.Sys/1024/1024)
 
+}
+
+func AppHelp(help bool) {
+	if help {
+		log.Printf("%s", `Usage of ./csv2parquet:
+  --delimiter string
+        Delimiter for csv file (default ",")
+  --flush int
+        number of rows to flush (default 10000)
+  --help
+        Show this help message
+  --schema string
+        schema of csv file (default "default")
+  --compression int
+        Type of compression (default 0)
+  --input string
+        input file name
+  --output string
+        output file name
+`)
+		os.Exit(0)
+	}
+	return
 }

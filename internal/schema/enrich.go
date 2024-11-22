@@ -1,4 +1,4 @@
-package shcema
+package schema
 
 import (
 	"csv2parquet/internal/helper"
@@ -6,7 +6,7 @@ import (
 
 type EnrichData struct {
 	Id                                  int32  `parquet:"name=id, type=INT32"`
-	PatientPharmacyId                   string `parquet:"name=patient_pharmacy_id, type=BYTE_ARRAY, convertedtype=UTF8"`
+	PatientPharmacyID                   string `parquet:"name=patient_pharmacy_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	PharmacyId                          string `parquet:"name=pharmacy_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	CPatientDob                         string `parquet:"name=c_patient_dob, type=BYTE_ARRAY, convertedtype=UTF8"` //DATE
 	PatientGender                       string `parquet:"name=patient_gender, type=BYTE_ARRAY, convertedtype=UTF8"`
@@ -50,10 +50,10 @@ type EnrichData struct {
 	AdhDate                             string `parquet:"name=adh_date, type=BYTE_ARRAY, convertedtype=UTF8"` //DATE int32(time.Now().Unix() / 3600 / 24),
 }
 
-func ProcessEnrichData(record []string) interface{} {
+func ProcessEnrichData(record []string, sc interface{}, header []string) interface{} {
 	eData := EnrichData{
 		Id:                    helper.StrToInt32(record[0], true),
-		PatientPharmacyId:     record[1],
+		PatientPharmacyID:     record[1],
 		PharmacyId:            record[2],
 		CPatientDob:           record[3],
 		PatientGender:         record[4],
@@ -96,14 +96,6 @@ func ProcessEnrichData(record []string) interface{} {
 
 	if record[24] != "" {
 		eData.CDispenseDaysSupply = record[24]
-	}
-
-	if record[25] != "" {
-		eData.CDispenseQuantity = record[25]
-	}
-
-	if record[26] != "" {
-
 	}
 
 	if record[27] != "" {
