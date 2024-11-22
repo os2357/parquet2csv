@@ -32,6 +32,7 @@ func main() {
 	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
 	flush := flag.Int("flush", 10000, "number of rows to flush")
 	table := flag.String("schema", "default", "schema of csv file")
+	verbose := flag.Bool("verbose", false, "Show this help message")
 	help := flag.Bool("help", false, "Show this help message")
 	flag.Parse()
 	helper.AppHelp(*help)
@@ -113,5 +114,7 @@ func main() {
 	if err = fw.Close(); err != nil {
 		log.Fatal("Write Finish error: " + err.Error())
 	}
-	log.Printf("%s\n", helper.RuntimeStatistics(startTime))
+	if *verbose {
+		log.Printf("%s\n", helper.RuntimeStatistics(startTime))
+	}
 }
