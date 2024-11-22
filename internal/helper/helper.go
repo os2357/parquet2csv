@@ -86,10 +86,10 @@ func AppHelp(help bool) {
         schema of csv file (default "default")
   --compression int
         Type of compression (default 0)
-  --input string
-        input file name
-  --output string
-        output file name
+  --verbose
+        Statistic info in the end
+  <input file path>
+  <output file path>
 `)
 		os.Exit(0)
 	}
