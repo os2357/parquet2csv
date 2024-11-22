@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"csv2parquet/internal/file"
 	"fmt"
 	"log"
 	"os"
@@ -53,13 +54,16 @@ func ConvertToFloat(str string, panicIfErr bool) float64 {
 	return i
 }
 
-func RuntimeStatistics(startTime time.Time) string {
+func RuntimeStatistics(startTime time.Time, inputFile string) string {
 	pc, _, _, _ := runtime.Caller(1)
 	funcObj := runtime.FuncForPC(pc)
 	runtimeFunc := regexp.MustCompile(`^.*\.(.*)$`)
 	name := runtimeFunc.ReplaceAllString(funcObj.Name(), "$1")
+	fInfo, _ := file.Info(inputFile)
 	return fmt.Sprintf(
-		"%s Processed %s (%s)",
+		"%s (%s): %s Processed %s (%s)",
+		inputFile,
+		GetFileSize(fInfo.Size()),
 		name,
 		time.Since(startTime).Round(time.Second).String(),
 		MemoryUsage(),
@@ -69,8 +73,7 @@ func RuntimeStatistics(startTime time.Time) string {
 func MemoryUsage() string {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	return fmt.Sprintf("TotalAlloc: %v MB, Sys: %v MB", memStats.TotalAlloc/1024/1024, memStats.Sys/1024/1024)
-
+	return fmt.Sprintf("TotalAlloc: %v MB, Sys: %v MB", memStats.TotalAlloc/1024/1024, memStats.Sys/1024/1024) //nolint:mnd // Convert to MB
 }
 
 func AppHelp(help bool) {
@@ -93,5 +96,18 @@ func AppHelp(help bool) {
 `)
 		os.Exit(0)
 	}
-	return
+}
+
+func GetFileSize(size int64) string {
+	sizeKb := 1024.0
+	sizeMb := sizeKb * sizeKb
+	sizeGb := sizeMb * sizeKb
+
+	if float64(size) < sizeMb {
+		return fmt.Sprintf("%.2f Kb", float64(size)/sizeKb)
+	} else if float64(size) < sizeGb {
+		return fmt.Sprintf("%.2f Mb", float64(size)/sizeMb)
+	} else {
+		return fmt.Sprintf("%.2f Gb", float64(size)/sizeGb)
+	}
 }

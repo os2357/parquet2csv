@@ -115,6 +115,6 @@ func main() {
 		log.Fatal("Write Finish error: " + err.Error())
 	}
 	if *verbose {
-		log.Printf("%s\n", helper.RuntimeStatistics(startTime))
+		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
 	}
 }
