@@ -28,7 +28,7 @@ func main() {
 		header []string
 	)
 
-	compression := flag.Int("compr3ession", 0, "Type of compression")
+	compression := flag.Int("compression", 0, "Type of compression")
 	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
 	flush := flag.Int("flush", 10000, "number of rows to flush")
 	table := flag.String("schema", "default", "schema of csv file")
