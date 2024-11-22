@@ -28,25 +28,7 @@ func main() {
 		header []string
 	)
 
-	compression := flag.Int("compression", 0, "Type of compression")
-	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
-	flush := flag.Int("flush", 10000, "number of rows to flush")
-	table := flag.String("schema", "default", "schema of csv file")
-	verbose := flag.Bool("verbose", false, "Show this help message")
-	help := flag.Bool("help", false, "Show this help message")
-	flag.Parse()
-	helper.AppHelp(*help)
-	for _, arg := range os.Args[1:] {
-		if arg[0] == '-' {
-			continue
-		}
-		args = append(args, arg)
-	}
-	if len(args) < 2 { //nolint:mnd // 2 required params
-		log.Fatal("Usage: ./cvs2parquet <file.csv> <file.parquet>")
-	}
-	csvFile := args[0]
-	parquetFile := args[1]
+	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
 
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
@@ -77,7 +59,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Can't create parquet writer" + err.Error())
 	}
-	pw.RowGroupSize = 128 * 1024 * 1024 // 128M
+	pw.RowGroupSize = 128 * 1024 * 1024 //nolint:mnd // 128MB
 	pw.CompressionType = parquet.CompressionCodec(int32(*compression))
 
 	for {
@@ -102,7 +84,6 @@ func main() {
 			i = 0
 		}
 		i++
-
 	}
 	if err = pw.Flush(true); err != nil {
 		log.Fatal("WriteFlush error: " + err.Error())
@@ -110,11 +91,33 @@ func main() {
 	if err = pw.WriteStop(); err != nil {
 		log.Fatal("WriteStop error: " + err.Error())
 	}
-
 	if err = fw.Close(); err != nil {
 		log.Fatal("Write Finish error: " + err.Error())
 	}
 	if *verbose {
 		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
 	}
+}
+
+func getParams(args []string) (*int, *string, *int, *string, *bool, string, string) {
+	compression := flag.Int("compression", 0, "Type of compression")
+	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
+	flush := flag.Int("flush", 10000, "number of rows to flush")
+	table := flag.String("schema", "default", "schema of csv file")
+	verbose := flag.Bool("verbose", false, "Show this help message")
+	help := flag.Bool("help", false, "Show this help message")
+	flag.Parse()
+	helper.AppHelp(*help)
+	for _, arg := range os.Args[1:] {
+		if arg[0] == '-' {
+			continue
+		}
+		args = append(args, arg)
+	}
+	if len(args) < 2 { //nolint:mnd // 2 required params
+		log.Fatal("Usage: ./cvs2parquet <file.csv> <file.parquet>")
+	}
+	csvFile := args[0]
+	parquetFile := args[1]
+	return compression, delimiter, flush, table, verbose, csvFile, parquetFile
 }

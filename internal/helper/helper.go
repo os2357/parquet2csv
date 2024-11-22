@@ -73,7 +73,11 @@ func RuntimeStatistics(startTime time.Time, inputFile string) string {
 func MemoryUsage() string {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
-	return fmt.Sprintf("TotalAlloc: %v MB, Sys: %v MB", memStats.TotalAlloc/1024/1024, memStats.Sys/1024/1024) //nolint:mnd // Convert to MB
+	return fmt.Sprintf(
+		"TotalAlloc: %v MB, Sys: %v MB",
+		memStats.TotalAlloc/1024/1024, //nolint:mnd // Convert to MB
+		memStats.Sys/1024/1024,        //nolint:mnd // Convert to MB
+	)
 }
 
 func AppHelp(help bool) {
@@ -103,11 +107,12 @@ func GetFileSize(size int64) string {
 	sizeMb := sizeKb * sizeKb
 	sizeGb := sizeMb * sizeKb
 
-	if float64(size) < sizeMb {
+	switch {
+	case float64(size) < sizeMb:
 		return fmt.Sprintf("%.2f Kb", float64(size)/sizeKb)
-	} else if float64(size) < sizeGb {
+	case float64(size) < sizeGb:
 		return fmt.Sprintf("%.2f Mb", float64(size)/sizeMb)
-	} else {
+	default:
 		return fmt.Sprintf("%.2f Gb", float64(size)/sizeGb)
 	}
 }

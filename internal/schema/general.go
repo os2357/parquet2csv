@@ -7,8 +7,6 @@ import (
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 )
 
-type GenericData struct {
-}
 type Processor func(record []string, sc interface{}, header []string) interface{}
 
 func MatchSchema(sch string, header []string) (interface{}, Processor) {
@@ -42,9 +40,13 @@ func ProcessDefault(header []string) (interface{}, Processor) {
 }
 
 func MakeDefaultSchema(header []string) interface{} {
-	sc := dynamicstruct.ExtendStruct(GenericData{})
+	sc := dynamicstruct.NewStruct()
 	for i := range header {
-		sc.AddField(strcase.ToCamel(header[i]), "", `json:"`+header[i]+`" parquet:"name=`+header[i]+`, type=BYTE_ARRAY, convertedtype=UTF8"`)
+		sc.AddField(
+			strcase.ToCamel(header[i]),
+			"",
+			`json:"`+header[i]+`" parquet:"name=`+header[i]+`, type=BYTE_ARRAY, convertedtype=UTF8"`,
+		)
 	}
 	return sc.Build().New()
 }
