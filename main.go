@@ -28,7 +28,7 @@ func main() {
 		header []string
 	)
 
-	compression := flag.Int("compression", 0, "Type of compression")
+	compression := flag.Int("compr3ession", 0, "Type of compression")
 	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
 	flush := flag.Int("flush", 10000, "number of rows to flush")
 	table := flag.String("schema", "default", "schema of csv file")
@@ -42,39 +42,39 @@ func main() {
 		args = append(args, arg)
 	}
 	if len(args) < 2 { //nolint:mnd // 2 required params
-		panic("Usage: go run main.go <file.csv> <file.parquet>")
+		log.Fatal("Usage: ./cvs2parquet <file.csv> <file.parquet>")
 	}
 	csvFile := args[0]
 	parquetFile := args[1]
 
 	if _, err = file.IsExist(csvFile); err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 	if _, err = file.IsWritable(filepath.Dir(parquetFile)); err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 	cFile, err := os.Open(csvFile)
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 	parser := csv.NewReader(cFile)
 	fw, err := local.NewLocalFileWriter(parquetFile)
 	if err != nil {
-		panic("Can't create local file" + err.Error())
+		log.Fatal("Can't create local file" + err.Error())
 	}
 
 	d := *delimiter
 	parser.Comma = []rune(d)[0]
 	header, err = parser.Read()
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 	i := 0
 
 	structType, processor := schema.MatchSchema(*table, header)
-	pw, err := writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // don't know in example the same maybe the number of threads
+	pw, err := writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // maybe the number of threads
 	if err != nil {
-		panic("Can't create parquet writer" + err.Error())
+		log.Fatal("Can't create parquet writer" + err.Error())
 	}
 	pw.RowGroupSize = 128 * 1024 * 1024 // 128M
 	pw.CompressionType = parquet.CompressionCodec(int32(*compression))
@@ -85,7 +85,7 @@ func main() {
 			break
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err.Error())
 		}
 		eData = processor(record, structType, header)
 
@@ -104,14 +104,14 @@ func main() {
 
 	}
 	if err = pw.Flush(true); err != nil {
-		panic("WriteFlush error: " + err.Error())
+		log.Fatal("WriteFlush error: " + err.Error())
 	}
 	if err = pw.WriteStop(); err != nil {
-		panic("WriteStop error: " + err.Error())
+		log.Fatal("WriteStop error: " + err.Error())
 	}
 
 	if err = fw.Close(); err != nil {
-		panic("Write Finish error: " + err.Error())
+		log.Fatal("Write Finish error: " + err.Error())
 	}
 	log.Printf("%s\n", helper.RuntimeStatistics(startTime))
 }
