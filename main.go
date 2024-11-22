@@ -41,10 +41,6 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	parser := csv.NewReader(cFile)
-	fw, err := local.NewLocalFileWriter(parquetFile)
-	if err != nil {
-		log.Fatal("Can't create local file" + err.Error())
-	}
 
 	d := *delimiter
 	parser.Comma = []rune(d)[0]
@@ -52,8 +48,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	i := 0
 
+	fw, err := local.NewLocalFileWriter(parquetFile)
+	if err != nil {
+		log.Fatal("Can't create local file" + err.Error())
+	}
 	structType, processor := schema.MatchSchema(*table, header)
 	pw, err := writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // maybe the number of threads
 	if err != nil {
@@ -61,7 +60,7 @@ func main() {
 	}
 	pw.RowGroupSize = 128 * 1024 * 1024 //nolint:mnd // 128MB
 	pw.CompressionType = parquet.CompressionCodec(int32(*compression))
-
+	i := 0
 	for {
 		record, err = parser.Read()
 		if errors.Is(err, io.EOF) {
@@ -73,12 +72,12 @@ func main() {
 		eData = processor(record, structType, header)
 
 		if err = pw.Write(&eData); err != nil {
-			log.Println("Write error", err)
+			log.Fatal("Write error", err)
 		}
 
 		if i == *flush {
 			if err = pw.Flush(true); err != nil {
-				log.Println("WriteFlush error", err)
+				log.Fatal("WriteFlush error", err)
 				return
 			}
 			i = 0
