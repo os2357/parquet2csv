@@ -25,7 +25,6 @@ func main() {
 	)
 
 	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
-	log.Printf("compression: %v, delimiter: %v, flush: %v, table: %v, verbose: %v, csvFile: %v, parquetFile: %v", compression, delimiter, flush, table, verbose, csvFile, parquetFile)
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
 	}
@@ -56,13 +55,13 @@ func main() {
 			log.Fatal("Write error", err)
 		}
 
-		//if i == *flush {
-		//	if err = pw.Flush(true); err != nil {
-		//		log.Fatal("WriteFlush error", err)
-		//		return
-		//	}
-		//	i = 0
-		//}
+		if i == *flush {
+			if err = pw.Flush(true); err != nil {
+				log.Fatal("WriteFlush error", err)
+				return
+			}
+			i = 0
+		}
 		i++
 	}
 	if err = pw.Flush(true); err != nil {
