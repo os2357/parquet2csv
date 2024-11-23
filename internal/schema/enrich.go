@@ -8,7 +8,7 @@ type EnrichData struct {
 	ID                                  int32  `parquet:"name=id, type=INT32"`
 	PatientPharmacyID                   string `parquet:"name=patient_pharmacy_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	PharmacyID                          string `parquet:"name=pharmacy_id, type=BYTE_ARRAY, convertedtype=UTF8"`
-	CPatientDob                         string `parquet:"name=c_patient_dob, type=BYTE_ARRAY, convertedtype=UTF8"` //DATE
+	CPatientDob                         string `parquet:"name=c_patient_dob, type=BYTE_ARRAY, convertedtype=UTF8"` // DATE
 	PatientGender                       string `parquet:"name=patient_gender, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Race                                string `parquet:"name=race, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Ethnicity                           string `parquet:"name=ethnicity, type=BYTE_ARRAY, convertedtype=UTF8"`
@@ -23,22 +23,22 @@ type EnrichData struct {
 	CMedStrength                        string `parquet:"name=c_med_strength, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Level1                              string `parquet:"name=level_1, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Level2                              string `parquet:"name=level_2, type=BYTE_ARRAY, convertedtype=UTF8"`
-	CDispenseDate                       string `parquet:"name=c_dispense_date, type=BYTE_ARRAY, convertedtype=UTF8"` // DATE int32(time.Now().Unix() / 3600 / 24),
+	CDispenseDate                       string `parquet:"name=c_dispense_date, type=BYTE_ARRAY, convertedtype=UTF8"` //nolint:lll    // DATE int32(time.Now().Unix() / 3600 / 24),
 	MedRxNormID                         string `parquet:"name=med_rx_norm_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	MedNDCID                            string `parquet:"name=med_ndc_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	MedDescription                      string `parquet:"name=med_description, type=BYTE_ARRAY, convertedtype=UTF8"`
 	DispenseQuantity                    string `parquet:"name=dispense_quantity, type=BYTE_ARRAY, convertedtype=UTF8"`
 	DispenseQuantityUnit                string `parquet:"name=dispense_quantity_unit, type=BYTE_ARRAY, convertedtype=UTF8"`
-	CDispenseDaysSupply                 string `parquet:"name=c_dispense_days_supply, type=BYTE_ARRAY, convertedtype=UTF8"` // INT32
+	CDispenseDaysSupply                 string `parquet:"name=c_dispense_days_supply, type=BYTE_ARRAY, convertedtype=UTF8"` //nolint:lll    // INT32
 	CDispenseQuantity                   string `parquet:"name=c_dispense_quantity, type=BYTE_ARRAY, convertedtype=UTF8"`
-	PotentialPatientID                  int32  `parquet:"name=potential_patient_id, type=INT32"`                                                  // INT32
-	PotentialPatientMedicationHistoryID string `parquet:"name=potential_patient_medication_history_id, type=BYTE_ARRAY, repetitiontype=OPTIONAL"` // INT32
+	PotentialPatientID                  int32  `parquet:"name=potential_patient_id, type=INT32"`                                                  //nolint:lll    // INT32
+	PotentialPatientMedicationHistoryID string `parquet:"name=potential_patient_medication_history_id, type=BYTE_ARRAY, repetitiontype=OPTIONAL"` //nolint:lll    // INT32
 	PharmacyNPI                         string `parquet:"name=pharmacy_npi, type=BYTE_ARRAY, convertedtype=UTF8"`
 	PharmacyNCPDP                       string `parquet:"name=pharmacy_ncpdp, type=BYTE_ARRAY, convertedtype=UTF8"`
 	PharmacyNABP                        string `parquet:"name=pharmacy_nabp, type=BYTE_ARRAY, convertedtype=UTF8"`
 	ImportID                            string `parquet:"name=import_id, type=BYTE_ARRAY, convertedtype=UTF8"`
 	CMedCleanName                       string `parquet:"name=c_med_clean_name, type=BYTE_ARRAY, convertedtype=UTF8"`
-	CDispenseQuantityUnit               string `parquet:"name=c_dispense_quantity_unit, type=BYTE_ARRAY, convertedtype=UTF8"`
+	CDispenseQuantityUnit               string `parquet:"name=c_dispense_quantity_unit, type=BYTE_ARRAY, convertedtype=UTF8"` //nolint:lll
 	Level3                              string `parquet:"name=level_3, type=BYTE_ARRAY, convertedtype=UTF8"`
 	Level4                              string `parquet:"name=level_4, type=BYTE_ARRAY, convertedtype=UTF8"`
 	CMedSourceCountry                   string `parquet:"name=c_med_source_country, type=BYTE_ARRAY, convertedtype=UTF8"`
@@ -47,7 +47,7 @@ type EnrichData struct {
 	FileName                            string `parquet:"name=filename, type=BYTE_ARRAY, convertedtype=UTF8"`
 	CreatedAt                           int32  `parquet:"name=created_at, type=INT32"` // INT32
 	CompareKey                          string `parquet:"name=compare_key, type=BYTE_ARRAY, convertedtype=UTF8"`
-	AdhDate                             string `parquet:"name=adh_date, type=BYTE_ARRAY, convertedtype=UTF8"` // DATE int32(time.Now().Unix() / 3600 / 24),
+	AdhDate                             string `parquet:"name=adh_date, type=BYTE_ARRAY, convertedtype=UTF8"` //nolint:lll    // DATE int32(time.Now().Unix() / 3600 / 24),
 }
 
 func ProcessEnrichData(record []string, sc interface{}, header []string) interface{} {

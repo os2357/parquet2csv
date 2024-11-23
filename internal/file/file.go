@@ -45,7 +45,7 @@ func IsWritable(path string) (bool, error) {
 		return false, errors.New("Unable to get stat. " + path)
 	}
 
-	if uint32(os.Geteuid()) != stat.Uid { //nolint:gosec
+	if uint32(os.Geteuid()) != stat.Uid { //nolint:gosec // uid newer less than 0
 		return false, errors.New("User doesn't have permission to write to this directory. " + path)
 	}
 	return true, nil

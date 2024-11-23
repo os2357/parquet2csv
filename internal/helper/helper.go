@@ -82,7 +82,9 @@ func MemoryUsage() string {
 
 func AppHelp(help bool) {
 	if help {
-		log.Printf("%s", `Usage of ./csv2parquet:
+		log.Printf("%s", `
+https://github.com/dbunt1tled/parquet2csv
+Usage of ./csv2parquet:
   --delimiter string
         Delimiter for csv file (default ",")
   --flush int
