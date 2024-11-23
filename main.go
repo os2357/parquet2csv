@@ -4,10 +4,7 @@ import (
 	"csv2parquet/internal/file"
 	"csv2parquet/internal/helper"
 	"csv2parquet/internal/schema"
-	"encoding/csv"
-	"errors"
 	"flag"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,56 +18,41 @@ import (
 func main() {
 	startTime := time.Now()
 	var (
-		err    error
-		eData  interface{}
-		args   []string
-		record []string
-		header []string
+		err        error
+		eData      interface{}
+		args       []string
+		header     []string
+		processor  schema.Processor
+		structType interface{}
+		pw         *writer.ParquetWriter
 	)
 
 	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
-
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
 	}
 	if _, err = file.IsWritable(filepath.Dir(parquetFile)); err != nil {
 		log.Fatal(err.Error())
 	}
-	cFile, err := os.Open(csvFile)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	parser := csv.NewReader(cFile)
-
-	d := *delimiter
-	parser.Comma = []rune(d)[0]
-	header, err = parser.Read()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
 	fw, err := local.NewLocalFileWriter(parquetFile)
 	if err != nil {
 		log.Fatal("Can't create local file" + err.Error())
 	}
-	structType, processor := schema.MatchSchema(*table, header)
-	pw, err := writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // maybe the number of threads
-	if err != nil {
-		log.Fatal("Can't create parquet writer" + err.Error())
-	}
-	pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
-	pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression has never less than 0
 	i := 0
-	for {
-		record, err = parser.Read()
-		if errors.Is(err, io.EOF) {
-			break
+	for rec := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
+		if i == 0 {
+			header = rec
+			structType, processor = schema.MatchSchema(*table, header)
+			pw, err = writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // maybe the number of threads
+			if err != nil {
+				log.Fatal("Can't create parquet writer" + err.Error())
+			}
+			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
+			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression has never less than 0
+			i++
+			continue
 		}
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		eData = processor(record, structType, header)
-
+		eData = processor(rec, structType, header)
 		if err = pw.Write(&eData); err != nil {
 			log.Fatal("Write error", err)
 		}

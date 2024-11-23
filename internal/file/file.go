@@ -1,7 +1,10 @@
 package file
 
 import (
+	"encoding/csv"
 	"errors"
+	"io"
+	"log"
 	"os"
 	"syscall"
 )
@@ -49,4 +52,37 @@ func IsWritable(path string) (bool, error) {
 		return false, errors.New("User doesn't have permission to write to this directory. " + path)
 	}
 	return true, nil
+}
+
+func ReadCSV(fName string, delimiter rune, skipHeader bool) (ch chan []string) {
+	ch = make(chan []string)
+	go func() {
+		cFile, _ := os.Open(fName)
+		defer func(cFile *os.File) {
+			err := cFile.Close()
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+		}(cFile)
+		r := csv.NewReader(cFile)
+		r.Comma = delimiter
+		if skipHeader {
+			if _, err := r.Read(); err != nil {
+				log.Fatal(err)
+			}
+		}
+		defer close(ch)
+		for {
+			rec, err := r.Read()
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				log.Fatal(err)
+
+			}
+			ch <- rec
+		}
+	}()
+	return
 }
