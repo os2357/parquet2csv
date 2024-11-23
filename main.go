@@ -48,7 +48,7 @@ func main() {
 				log.Fatal("Can't create parquet writer" + err.Error())
 			}
 			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
-			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression has never less than 0
+			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
 			i++
 			continue
 		}
