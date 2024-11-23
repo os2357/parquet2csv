@@ -4,10 +4,7 @@ import (
 	"csv2parquet/internal/file"
 	"csv2parquet/internal/helper"
 	"csv2parquet/internal/schema"
-	"encoding/csv"
-	"errors"
 	"flag"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -24,28 +21,15 @@ func main() {
 		err    error
 		eData  interface{}
 		args   []string
-		record []string
 		header []string
 	)
 
 	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
-
+	log.Printf("compression: %v, delimiter: %v, flush: %v, table: %v, verbose: %v, csvFile: %v, parquetFile: %v", compression, delimiter, flush, table, verbose, csvFile, parquetFile)
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
 	}
 	if _, err = file.IsWritable(filepath.Dir(parquetFile)); err != nil {
-		log.Fatal(err.Error())
-	}
-	cFile, err := os.Open(csvFile)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	parser := csv.NewReader(cFile)
-
-	d := *delimiter
-	parser.Comma = []rune(d)[0]
-	header, err = parser.Read()
-	if err != nil {
 		log.Fatal(err.Error())
 	}
 
@@ -61,27 +45,24 @@ func main() {
 	pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
 	pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression has never less than 0
 	i := 0
-	for {
-		record, err = parser.Read()
-		if errors.Is(err, io.EOF) {
-			break
+	for rec := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
+		if i == 0 {
+			header = rec
+			i++
+			continue
 		}
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		eData = processor(record, structType, header)
-
+		eData = processor(rec, structType, header)
 		if err = pw.Write(&eData); err != nil {
 			log.Fatal("Write error", err)
 		}
 
-		if i == *flush {
-			if err = pw.Flush(true); err != nil {
-				log.Fatal("WriteFlush error", err)
-				return
-			}
-			i = 0
-		}
+		//if i == *flush {
+		//	if err = pw.Flush(true); err != nil {
+		//		log.Fatal("WriteFlush error", err)
+		//		return
+		//	}
+		//	i = 0
+		//}
 		i++
 	}
 	if err = pw.Flush(true); err != nil {
