@@ -54,7 +54,9 @@ func IsWritable(path string) (bool, error) {
 	return true, nil
 }
 
-func ReadCSV(fName string, delimiter rune, skipHeader bool) (ch chan []string) {
+type ReadCSVChannel chan []string
+
+func ReadCSV(fName string, delimiter rune, skipHeader bool) (ch ReadCSVChannel) {
 	ch = make(chan []string)
 	go func() {
 		cFile, _ := os.Open(fName)
@@ -84,5 +86,5 @@ func ReadCSV(fName string, delimiter rune, skipHeader bool) (ch chan []string) {
 			ch <- rec
 		}
 	}()
-	return
+	return ch
 }
