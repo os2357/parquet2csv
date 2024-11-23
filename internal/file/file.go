@@ -81,7 +81,6 @@ func ReadCSV(fName string, delimiter rune, skipHeader bool) (ch ReadCSVChannel) 
 					break
 				}
 				log.Fatal(err)
-
 			}
 			ch <- rec
 		}
