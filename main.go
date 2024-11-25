@@ -72,8 +72,11 @@ func main() {
 		log.Println("WriteStop error", err)
 		return
 	}
-	log.Println("Write Finished")
-	fw.Close()
+	err = fw.Close()
+	if err != nil {
+		log.Println("Close Writer error", err)
+		return
+	}
 	if *verbose {
 		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
 	}
