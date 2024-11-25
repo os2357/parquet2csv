@@ -5,7 +5,6 @@ import (
 	"csv2parquet/internal/helper"
 	"csv2parquet/internal/schema"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -107,12 +106,15 @@ func getParams(args []string) (*int, *string, *int, *string, *bool, string, stri
 func main() {
 	startTime := time.Now()
 	var (
-		err  error
-		args []string
+		err        error
+		header     []string
+		args       []string
+		structType interface{}
+		// processor  schema.Processor
+		pw *writer.ParquetWriter
 	)
 
 	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
-	fmt.Println(table)
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
 	}
@@ -125,18 +127,32 @@ func main() {
 		log.Println("Can't create local file", err)
 		return
 	}
-
-	pw, err := writer.NewParquetWriter(fw, new(schema.EnrichData), 2)
-	if err != nil {
-		log.Println("Can't create parquet writer", err)
-		return
-	}
-
-	pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
-	pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
-
 	i := 0
-	for record := range file.ReadCSV("/Users/admin/potential_patient_enriched_data.csv", []rune(*delimiter)[0], true) {
+	for record := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
+		if i == 0 {
+			header = record
+			structType, _ = schema.MatchSchema(*table, header)
+			pw, err = writer.NewParquetWriter(fw, structType, 2)
+			if err != nil {
+				log.Println("Can't create parquet writer", err)
+				return
+			}
+
+			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
+			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
+
+			// header = record
+			// _, _ = schema.MatchSchema(*table, header)
+			// pw, err = writer.NewParquetWriter(fw, new(schema.EnrichData), 4) //nolint:mnd // maybe the number of threads
+			// if err != nil {
+			// 	log.Fatal("Can't create parquet writer" + err.Error())
+			// }
+			// pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
+			// pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
+			i++
+			continue
+		}
+
 		shoe := schema.EnrichData{
 			ID:                                  helper.StrToInt32(record[0], true),
 			PatientPharmacyID:                   record[1],
