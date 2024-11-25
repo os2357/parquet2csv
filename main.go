@@ -19,11 +19,10 @@ func main() {
 	startTime := time.Now()
 	var (
 		err        error
-		eData      interface{}
-		args       []string
 		header     []string
-		processor  schema.Processor
+		args       []string
 		structType interface{}
+		processor  schema.Processor
 		pw         *writer.ParquetWriter
 	)
 
@@ -36,25 +35,28 @@ func main() {
 	}
 	fw, err := local.NewLocalFileWriter(parquetFile)
 	if err != nil {
-		log.Fatal("Can't create local file" + err.Error())
+		log.Println("Can't create local file", err)
+		return
 	}
 	i := 0
 	for rec := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
 		if i == 0 {
 			header = rec
 			structType, processor = schema.MatchSchema(*table, header)
-			pw, err = writer.NewParquetWriter(fw, structType, 4) //nolint:mnd // maybe the number of threads
+			pw, err = writer.NewParquetWriter(fw, structType, 2) //nolint:mnd // maybe the number of threads
 			if err != nil {
-				log.Fatal("Can't create parquet writer" + err.Error())
+				log.Println("Can't create parquet writer", err)
+				return
 			}
 			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
-			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
+			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression >= 0
 			i++
 			continue
 		}
-		eData = processor(rec, structType, header)
-		if err = pw.Write(&eData); err != nil {
-			log.Fatal("Write error", err)
+
+		eData := processor(rec, structType, header)
+		if err = pw.Write(eData); err != nil {
+			log.Println("Write error", err)
 		}
 
 		if i == *flush {
@@ -66,15 +68,12 @@ func main() {
 		}
 		i++
 	}
-	if err = pw.Flush(true); err != nil {
-		log.Fatal("WriteFlush error: " + err.Error())
-	}
 	if err = pw.WriteStop(); err != nil {
-		log.Fatal("WriteStop error: " + err.Error())
+		log.Println("WriteStop error", err)
+		return
 	}
-	if err = fw.Close(); err != nil {
-		log.Fatal("Write Finish error: " + err.Error())
-	}
+	log.Println("Write Finished")
+	fw.Close()
 	if *verbose {
 		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
 	}
