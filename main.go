@@ -153,50 +153,7 @@ func main() {
 			continue
 		}
 
-		shoe := schema.EnrichData{
-			ID:                                  helper.StrToInt32(record[0], true),
-			PatientPharmacyID:                   record[1],
-			PharmacyID:                          record[2],
-			CPatientDob:                         record[3],
-			PatientGender:                       record[4],
-			Race:                                record[5],
-			Ethnicity:                           record[6],
-			Guardian:                            record[7],
-			Address:                             record[8],
-			PhoneNumber:                         record[9],
-			Email:                               record[10],
-			MedName:                             record[11],
-			MedTA:                               record[12],
-			MedDose:                             record[13],
-			CMedGenericName:                     record[14],
-			CMedStrength:                        record[15],
-			Level1:                              record[16],
-			Level2:                              record[17],
-			CDispenseDate:                       record[18],
-			MedRxNormID:                         record[19],
-			MedNDCID:                            record[20],
-			MedDescription:                      record[21],
-			DispenseQuantity:                    record[22],
-			DispenseQuantityUnit:                record[23],
-			CDispenseDaysSupply:                 record[24],
-			PotentialPatientID:                  helper.StrToInt32(record[26], true),
-			PotentialPatientMedicationHistoryID: record[27],
-			PharmacyNPI:                         record[28],
-			PharmacyNCPDP:                       record[29],
-			PharmacyNABP:                        record[30],
-			ImportID:                            record[31],
-			CMedCleanName:                       record[32],
-			CDispenseQuantityUnit:               record[33],
-			Level3:                              record[34],
-			Level4:                              record[35],
-			CMedSourceCountry:                   record[36],
-			Level5:                              record[37],
-			OriginalMedName:                     record[38],
-			FileName:                            record[39],
-			CreatedAt:                           helper.StrToInt32(record[40], true),
-			CompareKey:                          record[41],
-			AdhDate:                             record[42],
-		}
+		shoe := schema.ProcessEnrichData(record, structType, header)
 		if err = pw.Write(shoe); err != nil {
 			log.Println("Write error", err)
 		}
