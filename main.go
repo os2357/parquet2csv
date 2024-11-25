@@ -5,6 +5,7 @@ import (
 	"csv2parquet/internal/helper"
 	"csv2parquet/internal/schema"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 	"github.com/xitongsys/parquet-go/writer"
 )
 
-func main() {
+func main1() {
 	startTime := time.Now()
 	var (
 		err        error
@@ -101,4 +102,107 @@ func getParams(args []string) (*int, *string, *int, *string, *bool, string, stri
 	csvFile := args[0]
 	parquetFile := args[1]
 	return compression, delimiter, flush, table, verbose, csvFile, parquetFile
+}
+
+func main() {
+	startTime := time.Now()
+	var (
+		err  error
+		args []string
+	)
+
+	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
+	fmt.Println(table)
+	if _, err = file.IsExist(csvFile); err != nil {
+		log.Fatal(err.Error())
+	}
+	if _, err = file.IsWritable(filepath.Dir(parquetFile)); err != nil {
+		log.Fatal(err.Error())
+	}
+
+	fw, err := local.NewLocalFileWriter(parquetFile)
+	if err != nil {
+		log.Println("Can't create local file", err)
+		return
+	}
+
+	pw, err := writer.NewParquetWriter(fw, new(schema.EnrichData), 2)
+	if err != nil {
+		log.Println("Can't create parquet writer", err)
+		return
+	}
+
+	pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
+	pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression > 0
+
+	i := 0
+	for record := range file.ReadCSV("/Users/admin/potential_patient_enriched_data.csv", []rune(*delimiter)[0], true) {
+		shoe := schema.EnrichData{
+			ID:                                  helper.StrToInt32(record[0], true),
+			PatientPharmacyID:                   record[1],
+			PharmacyID:                          record[2],
+			CPatientDob:                         record[3],
+			PatientGender:                       record[4],
+			Race:                                record[5],
+			Ethnicity:                           record[6],
+			Guardian:                            record[7],
+			Address:                             record[8],
+			PhoneNumber:                         record[9],
+			Email:                               record[10],
+			MedName:                             record[11],
+			MedTA:                               record[12],
+			MedDose:                             record[13],
+			CMedGenericName:                     record[14],
+			CMedStrength:                        record[15],
+			Level1:                              record[16],
+			Level2:                              record[17],
+			CDispenseDate:                       record[18],
+			MedRxNormID:                         record[19],
+			MedNDCID:                            record[20],
+			MedDescription:                      record[21],
+			DispenseQuantity:                    record[22],
+			DispenseQuantityUnit:                record[23],
+			CDispenseDaysSupply:                 record[24],
+			PotentialPatientID:                  helper.StrToInt32(record[26], true),
+			PotentialPatientMedicationHistoryID: record[27],
+			PharmacyNPI:                         record[28],
+			PharmacyNCPDP:                       record[29],
+			PharmacyNABP:                        record[30],
+			ImportID:                            record[31],
+			CMedCleanName:                       record[32],
+			CDispenseQuantityUnit:               record[33],
+			Level3:                              record[34],
+			Level4:                              record[35],
+			CMedSourceCountry:                   record[36],
+			Level5:                              record[37],
+			OriginalMedName:                     record[38],
+			FileName:                            record[39],
+			CreatedAt:                           helper.StrToInt32(record[40], true),
+			CompareKey:                          record[41],
+			AdhDate:                             record[42],
+		}
+		if err = pw.Write(shoe); err != nil {
+			log.Println("Write error", err)
+		}
+
+		if i == *flush {
+			if err = pw.Flush(true); err != nil {
+				log.Fatal("WriteFlush error", err)
+				return
+			}
+			i = 0
+		}
+		i++
+	}
+
+	if err = pw.WriteStop(); err != nil {
+		log.Println("WriteStop error", err)
+		return
+	}
+
+	log.Println("Write Finished")
+	fw.Close()
+	if *verbose {
+		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
+	}
 }
