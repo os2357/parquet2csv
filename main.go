@@ -29,6 +29,7 @@ func main() {
 	compression, delimiter, flush, table, verbose, csvFile, parquetFile := getParams(args)
 	if _, err = file.IsExist(csvFile); err != nil {
 		log.Fatal(err.Error())
+		os.Exit(1)
 	}
 	if _, err = file.IsWritable(filepath.Dir(parquetFile)); err != nil {
 		log.Fatal(err.Error())
@@ -36,7 +37,7 @@ func main() {
 	fw, err := local.NewLocalFileWriter(parquetFile)
 	if err != nil {
 		log.Println("Can't create local file", err)
-		return
+		os.Exit(1)
 	}
 	i := 0
 	for rec := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
@@ -46,7 +47,7 @@ func main() {
 			pw, err = writer.NewParquetWriter(fw, structType, 2) //nolint:mnd // maybe the number of threads
 			if err != nil {
 				log.Println("Can't create parquet writer", err)
-				return
+				os.Exit(1)
 			}
 			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
 			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression >= 0
@@ -62,7 +63,7 @@ func main() {
 		if i == *flush {
 			if err = pw.Flush(true); err != nil {
 				log.Fatal("WriteFlush error", err)
-				return
+				os.Exit(1)
 			}
 			i = 0
 		}
@@ -70,12 +71,12 @@ func main() {
 	}
 	if err = pw.WriteStop(); err != nil {
 		log.Println("WriteStop error", err)
-		return
+		os.Exit(1)
 	}
 	err = fw.Close()
 	if err != nil {
 		log.Println("Close Writer error", err)
-		return
+		os.Exit(1)
 	}
 	if *verbose {
 		log.Printf("%s\n", helper.RuntimeStatistics(startTime, csvFile))
