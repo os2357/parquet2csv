@@ -1,6 +1,6 @@
 run:
-	@go run
+	@GOGC=150 @go run
 build:
-	@go build
+	@GOGC=150 @go build
 build-opt:
-	@go build -ldflags "-s -w"  -o csv2parquet
+	@GOGC=150 @go build -ldflags "-s -w"  -o csv2parquet

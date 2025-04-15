@@ -37,33 +37,43 @@ func main() {
 		log.Fatalf("Can't create local file: %v", err)
 	}
 	i := 0
-	for rec := range file.ReadCSV(csvFile, []rune(*delimiter)[0], false) {
-		if i == 0 {
-			header = rec
-			structType, processor = schema.MatchSchema(*table, header)
-			pw, err = writer.NewParquetWriter(fw, structType, 2) //nolint:mnd // maybe the number of threads
-			if err != nil {
-				log.Fatalf("Can't create parquet writer: %v", err)
-			}
-			pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
-			pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression >= 0
-			i++
-			continue
-		}
-
-		eData := processor(rec, structType, header)
-		if err = pw.Write(eData); err != nil {
+	bp := file.NewBatchProcessor(csvFile, 10000, []rune(*delimiter)[0], false)
+	bCh, eCh := bp.Reader()
+	for rows := range bCh {
+		select {
+		case err := <-eCh:
 			log.Fatalf("Write error: %v", err)
-		}
+		default:
+			for _, rec := range rows.Rows {
+				if i == 0 {
+					header = rec
+					structType, processor = schema.MatchSchema(*table, header)
+					pw, err = writer.NewParquetWriter(fw, structType, 2) //nolint:mnd // maybe the number of threads
+					if err != nil {
+						log.Fatalf("Can't create parquet writer: %v", err)
+					}
+					pw.RowGroupSize = 128 * 1024 * 1024                                //nolint:mnd // 128MB
+					pw.CompressionType = parquet.CompressionCodec(int32(*compression)) //nolint:gosec // compression >= 0
+					i++
+					continue
+				}
 
-		if i == *flush {
-			if err = pw.Flush(true); err != nil {
-				log.Fatalf("Write Flush error: %v", err)
+				eData := processor(rec, structType, header)
+				if err = pw.Write(eData); err != nil {
+					log.Fatalf("Write error: %v", err)
+				}
+
+				if i == *flush {
+					if err = pw.Flush(true); err != nil {
+						log.Fatalf("Write Flush error: %v", err)
+					}
+					i = 0
+				}
+				i++
 			}
-			i = 0
 		}
-		i++
 	}
+
 	if err = pw.WriteStop(); err != nil {
 		log.Fatalf("WriteStop error: %v", err)
 	}

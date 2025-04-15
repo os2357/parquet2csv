@@ -1,8 +1,7 @@
 package schema
 
 import (
-	"encoding/json"
-
+	"github.com/bytedance/sonic"
 	"github.com/iancoleman/strcase"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 )
@@ -29,9 +28,9 @@ func ProcessDefault(header []string) (interface{}, Processor) {
 		for i := range header {
 			data[header[i]] = record[i]
 		}
-		jsonString, _ := json.Marshal(data)
+		jsonString, _ := sonic.ConfigFastest.Marshal(data)
 
-		err := json.Unmarshal(jsonString, &sc)
+		err := sonic.ConfigFastest.Unmarshal(jsonString, &sc)
 		if err != nil {
 			panic(err)
 		}
