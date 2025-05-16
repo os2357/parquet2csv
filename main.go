@@ -6,7 +6,6 @@ import (
 	"csv2parquet/internal/schema"
 	"flag"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -87,31 +86,15 @@ func main() {
 }
 
 func getParams() (*int, *string, *int, *string, *bool, string, string) {
-	const requiredParams = 2
-	args := make([]string, requiredParams)
-	compression := flag.Int("compression", 0, "Type of compression")
-	delimiter := flag.String("delimiter", ",", "Delimiter for csv file")
-	flush := flag.Int("flush", 10000, "number of rows to flush")
-	table := flag.String("schema", "default", "schema of csv file")
-	verbose := flag.Bool("verbose", false, "Show this help message")
-	help := flag.Bool("help", false, "Show this help message")
+	compression := flag.Int("compression", int(parquet.CompressionCodec_SNAPPY), "Compression codec: 0=UNCOMPRESSED, 1=SNAPPY, 2=GZIP")
+	delimiter := flag.String("delimiter", ",", "CSV delimiter")
+	flush := flag.Int("flush", 10000, "Flush every n rows")
+	table := flag.String("table", "default", "Schema processing mode")
+	verbose := flag.Bool("verbose", false, "Verbose output")
 	flag.Parse()
-	helper.AppHelp(*help)
-	i := 0
-	for _, arg := range os.Args[1:] {
-		if arg[i] == '-' {
-			continue
-		}
-		args[i] = arg
-		i++
-		if i == requiredParams {
-			break
-		}
+
+	if len(flag.Args()) < 2 {
+		log.Fatalf("Usage: ./csv2parquet [flags] <input.csv> <output.parquet>")
 	}
-	if i < requiredParams {
-		log.Fatal("Usage: ./cvs2parquet <file.csv> <file.parquet>")
-	}
-	csvFile := args[0]
-	parquetFile := args[1]
-	return compression, delimiter, flush, table, verbose, csvFile, parquetFile
+	return compression, delimiter, flush, table, verbose, flag.Args()[0], flag.Args()[1]
 }

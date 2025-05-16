@@ -1,33 +1,54 @@
 # csv2parquet
 
-[![Go Reference](https://pkg.go.dev/badge/golang.org/x/example.svg)](https://pkg.go.dev/golang.org/x/example) ![example workflow](https://github.com/dbunt1tled/parquet2csv/actions/workflows/go.yml/badge.svg)
+A fast, reliable CLI tool for converting CSV files to Apache Parquet format. Designed for data workflows that need efficient, schema-aware columnar storage.
 
-A fast, reliable CLI tool for converting CSV files to Apache Parquet format. Built in Go, it’s designed for data workflows that need efficient, schema-aware columnar storage.
+## Features
+
+- Converts CSV to Parquet with configurable compression (UNCOMPRESSED, SNAPPY, GZIP)
+- Automatically sanitizes CSV headers into valid Go struct field names
+- Supports large row group sizes for efficient downstream reads
+- Handles common encoding schemes and schema mapping patterns
+- Useful for benchmarking, analytics, and data ingestion pipelines
 
 ## Install & Run
 
-```
-$ go build
-$ ./csv2parquet file.csv file.parquet
+```bash
+go build
+./csv2parquet input.csv output.parquet
+````
+
+## Recommended Usage for Benchmarking
+
+```bash
+./csv2parquet -compression=2 -flush=10000 -delimiter="," input.csv output.parquet
 ```
 
-## Additional Flags
+* `-compression=2` enables **GZIP** compression (best size for benchmarking)
+* `-flush=10000` flushes rows in large row groups (\~10K rows at a time)
+
+## Command-Line Flags
+
+```bash
+./csv2parquet --help
+```
+
+| Flag            | Description                                                         | Default      |
+| --------------- | ------------------------------------------------------------------- | ------------ |
+| `--delimiter`   | Delimiter character for CSV fields                                  | `","`        |
+| `--flush`       | Number of rows to flush per group                                   | `10000`      |
+| `--schema`      | Schema processor (e.g. "default", "enrich")                         | `"default"`  |
+| `--compression` | Parquet compression codec:<br> 0=UNCOMPRESSED<br>1=SNAPPY<br>2=GZIP | `1` (SNAPPY) |
+| `--verbose`     | Show statistics/logging                                             | `false`      |
+
+### Positional Arguments
 
 ```
-$ ./csv2parquet --help
-Usage of ./csv2parquet:
-  --delimiter string
-        Delimiter for csv file (default ",")
-  --flush int
-        number of rows to flush (default 10000)
-  --help
-        Show this help message
-  --schema string
-        schema of csv file (default "default")
-  --compression int
-        Type of compression (default 0)
-  --verbose
-        Statistic info in the end
-  <input file path>
-  <output file path>
+<input file path>  Path to CSV file
+<output file path> Path to output Parquet file
+```
+
+## Example
+
+```bash
+./csv2parquet -compression=2 data.csv data.parquet
 ```

@@ -1,6 +1,10 @@
 package schema
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
+
 	"github.com/bytedance/sonic"
 	"github.com/iancoleman/strcase"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
@@ -38,13 +42,39 @@ func ProcessDefault(header []string) (interface{}, Processor) {
 	}
 }
 
+func sanitizeFieldName(s string, i int) string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return fmt.Sprintf("Field%d", i)
+	}
+	re := regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	s = re.ReplaceAllString(s, "_")
+	s = strings.TrimLeft(s, "_")
+	if s == "" || (s[0] < 'A' || (s[0] > 'Z' && s[0] < 'a') || s[0] > 'z') {
+		s = fmt.Sprintf("Field%d_%s", i, s)
+	}
+	return strcase.ToCamel(s)
+}
+
 func MakeDefaultSchema(header []string) interface{} {
 	sc := dynamicstruct.NewStruct()
 	for i := range header {
+		original := header[i]
+		fieldName := sanitizeFieldName(original, i)
+
+		// Final check
+		if fieldName == "" {
+			fieldName = fmt.Sprintf("Field%d", i)
+		}
+
+		// Escape quotes in tags just in case
+		cleanTag := strings.ReplaceAll(original, `"`, "")
+		fmt.Printf("Header %d: original=%q → sanitized=%q\n", i, original, fieldName)
+
 		sc.AddField(
-			strcase.ToCamel(header[i]),
-			"",
-			`json:"`+header[i]+`" parquet:"name=`+header[i]+`, type=BYTE_ARRAY, convertedtype=UTF8"`,
+			fieldName,
+			"string",
+			fmt.Sprintf(`json:"%s" parquet:"name=%s, type=BYTE_ARRAY, convertedtype=UTF8"`, cleanTag, cleanTag),
 		)
 	}
 	return sc.Build().New()
